@@ -13,37 +13,10 @@ type Message struct {
 }
 
 func getMessagesHandler(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query(`
-		SELECT id, name, message, created_at
-		FROM messages
-		ORDER BY created_at ASC
-	`)
-
+	messages, err := getMessages()
 	if err != nil {
-		http.Error(w, "Failed to fetch messages", http.StatusInternalServerError)
+		http.Error(w, "Failed to get messages", http.StatusInternalServerError)
 		return
-	}
-
-	defer rows.Close()
-
-	messages := []Message{}
-
-	for rows.Next() {
-		var message Message
-
-		err := rows.Scan(
-			&message.ID,
-			&message.Name,
-			&message.Message,
-			&message.CreatedAt,
-		)
-
-		if err != nil {
-			http.Error(w, "Failed to read messages", http.StatusInternalServerError)
-			return
-		}
-
-		messages = append(messages, message)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -56,8 +29,7 @@ func createMessageHandler(w http.ResponseWriter, r *http.Request) {
 		Message string `json:"message"`
 	}
 
-	err := json.NewDecoder(r.Body).Decode(&input)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -71,37 +43,9 @@ func createMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := db.Exec(`
-		INSERT INTO messages (name, message)
-		VALUES (?, ?)
-	`, input.Name, input.Message)
-
+	message, err := addMessage(input.Name, input.Message)
 	if err != nil {
 		http.Error(w, "Failed to create message", http.StatusInternalServerError)
-		return
-	}
-
-	id, err := result.LastInsertId()
-	if err != nil {
-		http.Error(w, "Failed to get message ID", http.StatusInternalServerError)
-		return
-	}
-
-	var message Message
-
-	err = db.QueryRow(`
-		SELECT id, name, message, created_at
-		FROM messages
-		WHERE id = ?
-	`, id).Scan(
-		&message.ID,
-		&message.Name,
-		&message.Message,
-		&message.CreatedAt,
-	)
-
-	if err != nil {
-		http.Error(w, "Failed to fetch created message", http.StatusInternalServerError)
 		return
 	}
 
