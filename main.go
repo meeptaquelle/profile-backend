@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -22,6 +23,10 @@ func main() {
 	err = connectDatabase()
 	if err != nil {
 		panic(err)
+	}
+
+	if err := initSheets(); err != nil {
+		log.Fatal(err)
 	}
 	http.HandleFunc("/api/health", healthHandler)
 
