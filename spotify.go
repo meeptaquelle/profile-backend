@@ -41,6 +41,12 @@ type SpotifyTrackDTO struct {
 	URL    string `json:"url"`
 }
 
+type SpotifyArtistDTO struct {
+	Name  string `json:"name"`
+	Image string `json:"image"`
+	URL   string `json:"url"`
+}
+
 type SpotifyTopTracksResponse struct {
 	Items []spotifyTrack `json:"items"`
 }
@@ -173,4 +179,73 @@ func getTopTracks() ([]SpotifyTrackDTO, error) {
 	}
 
 	return tracks, nil
+}
+
+func getSpotifyTopArtists(w http.ResponseWriter, r *http.Request) {
+	token, err := getSpotifyAccessToken()
+	if err != nil {
+		http.Error(w, "Failed to get Spotify access token", http.StatusInternalServerError)
+		return
+	}
+
+	req, err := http.NewRequest(
+		"GET",
+		"https://api.spotify.com/v1/me/top/artists?time_range=medium_term&limit=30",
+		nil,
+	)
+	if err != nil {
+		http.Error(w, "Failed to create Spotify request", http.StatusInternalServerError)
+		return
+	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		http.Error(w, "Failed to fetch Spotify artists", http.StatusInternalServerError)
+		return
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		http.Error(w, "Spotify API returned an error", response.StatusCode)
+		return
+	}
+
+	var data struct {
+		Items []struct {
+			Name   string `json:"name"`
+			Images []struct {
+				URL string `json:"url"`
+			} `json:"images"`
+			ExternalURLs struct {
+				Spotify string `json:"spotify"`
+			} `json:"external_urls"`
+		} `json:"items"`
+	}
+
+	if err := json.NewDecoder(response.Body).Decode(&data); err != nil {
+		http.Error(w, "Failed to decode Spotify artists", http.StatusInternalServerError)
+		return
+	}
+
+	artists := make([]SpotifyArtistDTO, 0, len(data.Items))
+
+	for _, artist := range data.Items {
+		image := ""
+
+		if len(artist.Images) > 0 {
+			image = artist.Images[0].URL
+		}
+
+		artists = append(artists, SpotifyArtistDTO{
+			Name:  artist.Name,
+			Image: image,
+			URL:   artist.ExternalURLs.Spotify,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(artists)
 }

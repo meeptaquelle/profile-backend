@@ -41,6 +41,7 @@ func main() {
 	http.HandleFunc("/api/spotify/login", spotifyLoginHandler)
 	http.HandleFunc("/api/spotify/callback", spotifyCallbackHandler)
 	http.HandleFunc("/api/spotify/top-tracks", topTracksHandler)
+	http.HandleFunc("/api/spotify/top-artists", getSpotifyTopArtists)
 	http.HandleFunc("/api/github", getGitHubProfile)
 	http.HandleFunc("/api/github/contributions", getGitHubContributions)
 	fmt.Println("Backend running on http://127.0.0.1:8080")
