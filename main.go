@@ -15,14 +15,9 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
+	err := godotenv.Load(".env")
 	if err != nil {
-		fmt.Println("Warning: .env file not found")
-	}
-
-	err = connectDatabase()
-	if err != nil {
-		panic(err)
+		log.Printf("Warning: failed to load .env: %v", err)
 	}
 
 	if err := initSheets(); err != nil {
@@ -49,20 +44,27 @@ func main() {
 	http.HandleFunc("/api/spotify/top-artists", getSpotifyTopArtists)
 	http.HandleFunc("/api/github", getGitHubProfile)
 	http.HandleFunc("/api/github/contributions", getGitHubContributions)
-	fmt.Println("Backend running on http://127.0.0.1:8080")
+	port := os.Getenv("PORT")
+
+	if port == "" {
+		port = "8080"
+	}
 
 	handler := enableCORS(http.DefaultServeMux)
-	err = http.ListenAndServe(":8080", handler)
-	if err != nil {
-		panic(err)
+
+	fmt.Printf("Backend running on port %s\n", port)
+
+	if err := http.ListenAndServe(":"+port, handler); err != nil {
+		log.Fatal(err)
 	}
 
 }
-
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		allowedOrigin := os.Getenv("FRONTEND_URL")
+
+		w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 		if r.Method == http.MethodOptions {
@@ -73,7 +75,6 @@ func enableCORS(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"status":"ok"}`))
@@ -152,9 +153,6 @@ func spotifyCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, string(body), resp.StatusCode)
 		return
 	}
-
-	fmt.Println("Spotify token response:")
-	fmt.Println(string(body))
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte("Spotify authorization successful. Check your terminal."))
