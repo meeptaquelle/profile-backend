@@ -23,11 +23,11 @@ var sheetsService *sheets.Service
 func initSheets() error {
 	ctx := context.Background()
 
-	credentialsFile := os.Getenv("GOOGLE_CREDENTIALS_FILE")
+	credentialsJSON := os.Getenv("GOOGLE_CREDENTIALS_JSON")
 
 	service, err := sheets.NewService(
 		ctx,
-		option.WithCredentialsFile(credentialsFile),
+		option.WithCredentialsJSON([]byte(credentialsJSON)),
 	)
 	if err != nil {
 		return err
