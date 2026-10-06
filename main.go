@@ -44,6 +44,8 @@ func main() {
 	http.HandleFunc("/api/spotify/top-artists", getSpotifyTopArtists)
 	http.HandleFunc("/api/github", getGitHubProfile)
 	http.HandleFunc("/api/github/contributions", getGitHubContributions)
+	http.HandleFunc("/api/github/commits", getGithubCommits)
+	http.HandleFunc("/api/github/devlog", getGitHubDevlog)
 	port := os.Getenv("PORT")
 
 	if port == "" {
@@ -59,6 +61,7 @@ func main() {
 	}
 
 }
+
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		allowedOrigin := os.Getenv("FRONTEND_URL")
