@@ -11,8 +11,8 @@ type Message struct {
 	ID        uint64 `json:"id"`
 	Name      string `json:"name"`
 	Message   string `json:"message"`
-	GifURL    string `json:"gif_url"`
 	CreatedAt string `json:"created_at"`
+	GifURL    string `json:"gif_url"`
 }
 
 func getMessagesHandler(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +64,7 @@ func createMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	message, err := addMessage(input.Name, input.Message)
+	message, err := addMessage(input.Name, input.Message, input.GifURL)
 	if err != nil {
 		http.Error(w, "Failed to create message", http.StatusInternalServerError)
 		return

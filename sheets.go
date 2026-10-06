@@ -16,6 +16,7 @@ type SheetMessage struct {
 	Name      string `json:"name"`
 	Message   string `json:"message"`
 	CreatedAt string `json:"created_at"`
+	GifURL    string `json:"gif_url"`
 }
 
 var sheetsService *sheets.Service
@@ -44,7 +45,7 @@ func getMessages() ([]SheetMessage, error) {
 	spreadsheetID := os.Getenv("GOOGLE_SHEETS_ID")
 	tab := os.Getenv("GOOGLE_SHEETS_TAB")
 
-	readRange := fmt.Sprintf("%s!A2:D", tab)
+	readRange := fmt.Sprintf("%s!A2:E", tab)
 
 	resp, err := sheetsService.Spreadsheets.Values.Get(
 		spreadsheetID,
@@ -57,7 +58,7 @@ func getMessages() ([]SheetMessage, error) {
 	messages := make([]SheetMessage, 0)
 
 	for _, row := range resp.Values {
-		if len(row) < 4 {
+		if len(row) < 5 {
 			continue
 		}
 
@@ -71,13 +72,14 @@ func getMessages() ([]SheetMessage, error) {
 			Name:      fmt.Sprint(row[1]),
 			Message:   fmt.Sprint(row[2]),
 			CreatedAt: fmt.Sprint(row[3]),
+			GifURL:    fmt.Sprint(row[4]),
 		})
 	}
 
 	return messages, nil
 }
 
-func addMessage(name string, message string) (SheetMessage, error) {
+func addMessage(name string, message string, gifURL string) (SheetMessage, error) {
 	spreadsheetID := os.Getenv("GOOGLE_SHEETS_ID")
 	tab := os.Getenv("GOOGLE_SHEETS_TAB")
 
@@ -101,12 +103,13 @@ func addMessage(name string, message string) (SheetMessage, error) {
 			name,
 			message,
 			createdAt,
+			gifURL,
 		},
 	}
 
 	_, err = sheetsService.Spreadsheets.Values.Append(
 		spreadsheetID,
-		fmt.Sprintf("%s!A:D", tab),
+		fmt.Sprintf("%s!A:E", tab),
 		&sheets.ValueRange{
 			Values: values,
 		},
@@ -121,5 +124,6 @@ func addMessage(name string, message string) (SheetMessage, error) {
 		Name:      name,
 		Message:   message,
 		CreatedAt: createdAt,
+		GifURL:    gifURL,
 	}, nil
 }
