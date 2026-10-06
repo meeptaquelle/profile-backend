@@ -83,7 +83,7 @@ func getGitHubDevlog(w http.ResponseWriter, r *http.Request) {
 
 	frontend, err := fetchGitHubCommits(
 		"meeptaquelle/meeptaquelle.github.io",
-		"gh-pages",
+		"main",
 		10,
 	)
 
