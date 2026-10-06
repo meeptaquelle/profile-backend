@@ -84,7 +84,9 @@ func createMessageHandler(w http.ResponseWriter, r *http.Request) {
  */
 var allowedGifHosts = map[string]struct{}{
 	"media.tenor.com":  {},
+	"media1.tenor.com": {},
 	"c.tenor.com":      {},
+
 	"media.giphy.com":  {},
 	"i.giphy.com":      {},
 	"media0.giphy.com": {},
