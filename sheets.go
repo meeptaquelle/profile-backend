@@ -58,10 +58,13 @@ func getMessages() ([]SheetMessage, error) {
 	messages := make([]SheetMessage, 0)
 
 	for _, row := range resp.Values {
-		if len(row) < 5 {
+		if len(row) < 4 {
 			continue
 		}
-
+		gifURL := ""
+		if len(row) >= 5 {
+			gifURL = fmt.Sprint(row[4])
+		}
 		id, err := strconv.ParseInt(fmt.Sprint(row[0]), 10, 64)
 		if err != nil {
 			continue
@@ -72,7 +75,7 @@ func getMessages() ([]SheetMessage, error) {
 			Name:      fmt.Sprint(row[1]),
 			Message:   fmt.Sprint(row[2]),
 			CreatedAt: fmt.Sprint(row[3]),
-			GifURL:    fmt.Sprint(row[4]),
+			GifURL:    gifURL,
 		})
 	}
 
