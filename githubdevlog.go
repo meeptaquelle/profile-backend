@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 )
 
 type GitHubCommit struct {
@@ -33,43 +32,65 @@ type githubCommitResponse struct {
 	HTMLURL string `json:"html_url"`
 }
 
-func fetchGitHubCommits(repo string, branch string, limit int) ([]GitHubCommit, error) {
-	apiURL := "https://api.github.com/repos/" +
-		repo +
-		"/commits?sha=" +
-		branch +
-		"&per_page=" +
-		strconv.Itoa(limit)
+func fetchGitHubCommits(repo string, branch string) ([]GitHubCommit, error) {
+	var result []GitHubCommit
+	page := 1
+	perPage := 100
 
-	response, err := http.Get(apiURL)
-	if err != nil {
-		return nil, err
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf(
-			"GitHub API returned status %d",
-			response.StatusCode,
+	for {
+		apiURL := fmt.Sprintf(
+			"https://api.github.com/repos/%s/commits?sha=%s&per_page=%d&page=%d",
+			repo,
+			branch,
+			perPage,
+			page,
 		)
-	}
 
-	var commits []githubCommitResponse
+		response, err := http.Get(apiURL)
+		if err != nil {
+			return nil, err
+		}
 
-	if err := json.NewDecoder(response.Body).Decode(&commits); err != nil {
-		return nil, err
-	}
+		if response.StatusCode != http.StatusOK {
+			response.Body.Close()
 
-	result := make([]GitHubCommit, 0, len(commits))
+			return nil, fmt.Errorf(
+				"GitHub API returned status %d",
+				response.StatusCode,
+			)
+		}
 
-	for _, commit := range commits {
-		result = append(result, GitHubCommit{
-			SHA:     commit.SHA,
-			Message: commit.Commit.Message,
-			Author:  commit.Commit.Author.Name,
-			Date:    commit.Commit.Author.Date,
-			HTMLURL: commit.HTMLURL,
-		})
+		var commits []githubCommitResponse
+
+		err = json.NewDecoder(response.Body).Decode(&commits)
+		response.Body.Close()
+
+		if err != nil {
+			return nil, err
+		}
+
+		// No more commits
+		if len(commits) == 0 {
+			break
+		}
+
+		for _, commit := range commits {
+			result = append(result, GitHubCommit{
+				SHA:     commit.SHA,
+				Message: commit.Commit.Message,
+				Author:  commit.Commit.Author.Name,
+				Date:    commit.Commit.Author.Date,
+				HTMLURL: commit.HTMLURL,
+			})
+		}
+
+		// GitHub returned fewer than 100 commits,
+		// meaning this is the final page.
+		if len(commits) < perPage {
+			break
+		}
+
+		page++
 	}
 
 	return result, nil
@@ -84,7 +105,6 @@ func getGitHubDevlog(w http.ResponseWriter, r *http.Request) {
 	frontend, err := fetchGitHubCommits(
 		"meeptaquelle/meeptaquelle.github.io",
 		"main",
-		10,
 	)
 
 	if err != nil {
@@ -99,7 +119,6 @@ func getGitHubDevlog(w http.ResponseWriter, r *http.Request) {
 	backend, err := fetchGitHubCommits(
 		"meeptaquelle/profile-backend",
 		"main",
-		10,
 	)
 
 	if err != nil {
