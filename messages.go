@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
-	"time"
 )
 
 type Message struct {
@@ -23,17 +21,6 @@ func getMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to get messages", http.StatusInternalServerError)
 		return
 	}
-
-	sort.Slice(messages, func(i, j int) bool {
-		ti, err1 := time.Parse(time.RFC3339, messages[i].CreatedAt)
-		tj, err2 := time.Parse(time.RFC3339, messages[j].CreatedAt)
-
-		if err1 != nil || err2 != nil {
-			return false
-		}
-
-		return ti.After(tj)
-	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(messages)
