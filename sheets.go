@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"time"
 
@@ -78,7 +79,16 @@ func getMessages() ([]SheetMessage, error) {
 			GifURL:    gifURL,
 		})
 	}
+	sort.Slice(messages, func(i, j int) bool {
+		ti, err1 := time.Parse(time.RFC3339, messages[i].CreatedAt)
+		tj, err2 := time.Parse(time.RFC3339, messages[j].CreatedAt)
 
+		if err1 != nil || err2 != nil {
+			return false
+		}
+
+		return ti.After(tj)
+	})
 	return messages, nil
 }
 
